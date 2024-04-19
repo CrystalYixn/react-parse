@@ -1,0 +1,28 @@
+{
+  "compilerOptions": {
+    "target": "ESNext",
+    "sourceMap": true,
+    "allowJs": true,
+    "skipLibCheck": true, 
+    "strict": true,
+    "forceConsistentCasingInFileNames": true,
+    // babel 会在没有默认导出时自动补充, 此标志让 TS 检查与 babel 默认逻辑一致
+    // 即允许默认导入没有默认导出的模块
+    "allowSyntheticDefaultImports": true,
+    "module": "esnext",
+    "moduleResolution": "node",
+    "resolveJsonModule": true,
+    "esModuleInterop": true,
+    "noEmit": true,
+    // 单文件编译报警, 在仅使用 babel 编译不使用 tsc 编译时出现 const enum 等报警
+    // 需要多文件识别(TSC 支持, babel 不行)才能编译的时候出现告警
+    "isolatedModules": true,
+  },
+  "include": [
+    "src"
+  ],
+  "exclude": [
+    "node_modules",
+    "dist"
+  ],
+}
