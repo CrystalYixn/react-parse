@@ -1,16 +1,19 @@
 {
   "compilerOptions": {
-    "target": "ESNext",
     "sourceMap": true,
-    "allowJs": true,
-    "skipLibCheck": true, 
     "strict": true,
+    "target": "ESNext",
+    "module": "ESNext",
+    "moduleResolution": "Node",
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["src/*"]
+    },
+    "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true,
     // babel 会在没有默认导出时自动补充, 此标志让 TS 检查与 babel 默认逻辑一致
     // 即允许默认导入没有默认导出的模块
     "allowSyntheticDefaultImports": true,
-    "module": "esnext",
-    "moduleResolution": "node",
     "resolveJsonModule": true,
     "esModuleInterop": true,
     "noEmit": true,
@@ -19,7 +22,7 @@
     "isolatedModules": true,
   },
   "include": [
-    "src"
+    "src",
   ],
   "exclude": [
     "node_modules",
