@@ -1,16 +1,22 @@
-// import { REACT_TEXT } from "./constants"
 import { REACT_TEXT } from '@/constants'
 
-function render(vdom: VNode, container: DOM) {
+/** 变为真实 dom 并挂载到 container 中 */
+function render(vdom: VDOM, container: DOM) {
   const dom = createDom(vdom)
   container.appendChild(dom)
 }
 
-function createDom(vdom: VNode) {
+/** 将 vdom 转换为真实 dom */
+function createDom(vdom: VDOM): DOM {
   let { type, props } = vdom
-  const dom = type === REACT_TEXT
-    ? document.createTextNode(props.content)
-    : document.createElement(type)
+  let dom: DOM
+  if (type === REACT_TEXT && props.content) {
+    dom  = document.createTextNode(props.content)
+  } else if (typeof type === 'function') {
+    dom = mountFunctionComponent(vdom as FunctionVDOM)
+  } else {
+    dom = document.createElement(type)
+  }
   // 处理 props
   if (props) {
     const { children } = props
@@ -25,6 +31,7 @@ function createDom(vdom: VNode) {
   return dom
 }
 
+/** 更新组件属性, 不包括 children */
 function updateProps(dom: DOM, oldProps: Props, newProps: Props) {
   for (const key in newProps) {
     const prop = newProps[key]
@@ -40,10 +47,20 @@ function updateProps(dom: DOM, oldProps: Props, newProps: Props) {
   }
 }
 
-function reconcileChildren(children: VNode[], parent: DOM) {
+/** 协调 children 并挂载 */
+function reconcileChildren(children: VDOM[], parent: DOM) {
   children.forEach(child => render(child, parent))
 }
 
-export default {
+/** 组件还要多执行一次获得一个新的 vdom */
+function mountFunctionComponent(vdom: FunctionVDOM) {
+  const { type, props } = vdom
+  const renderVdom = type(props)
+  return createDom(renderVdom)
+}
+
+const ReactDOM = {
   render,
 }
+
+export default ReactDOM
