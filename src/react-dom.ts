@@ -1,19 +1,23 @@
 import { REACT_TEXT } from '@/constants'
 
-/** 变为真实 dom 并挂载到 container 中 */
-function render(vdom: VDOM, container: DOM) {
+/** 将 vdom 变为真实 dom 并挂载到 container 中 */
+function render<P extends Props>(vdom: VDOM<P>, container: DOM) {
   const dom = createDom(vdom)
   container.appendChild(dom)
 }
 
 /** 将 vdom 转换为真实 dom */
-function createDom(vdom: VDOM): DOM {
+function createDom<P extends Props>(vdom: VDOM<P>): DOM {
   let { type, props } = vdom
   let dom: DOM
-  if (type === REACT_TEXT && props.content) {
-    dom  = document.createTextNode(props.content)
+  if (type === REACT_TEXT) {
+    dom  = document.createTextNode(props.content || '')
   } else if (typeof type === 'function') {
-    dom = mountFunctionComponent(vdom as FunctionVDOM)
+    if ('isReactComponent' in type) {
+      dom = mountClassComponent(vdom)
+    } else {
+      dom = mountFunctionComponent(vdom as FunctionVDOM)
+    }
   } else {
     dom = document.createElement(type)
   }
@@ -48,14 +52,22 @@ function updateProps(dom: DOM, oldProps: Props, newProps: Props) {
 }
 
 /** 协调 children 并挂载 */
-function reconcileChildren(children: VDOM[], parent: DOM) {
+function reconcileChildren<P extends Props>(children: VDOM<P>[], parent: DOM) {
   children.forEach(child => render(child, parent))
 }
 
-/** 组件还要多执行一次获得一个新的 vdom */
+/** 执行 type() 得到 vdom, 将 vdom 转为真实 dom 并返回 */
 function mountFunctionComponent(vdom: FunctionVDOM) {
   const { type, props } = vdom
   const renderVdom = type(props)
+  return createDom(renderVdom)
+}
+
+/** 调用 type() 创建类组件实例, 执行 render 成员函数, 并将 vdom 转为真实 dom */
+function mountClassComponent(vdom: ClassVDOM) {
+  const { type, props } = vdom
+  const instance = new type(props)
+  const renderVdom = instance.render()
   return createDom(renderVdom)
 }
 

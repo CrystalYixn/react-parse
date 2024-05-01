@@ -1,11 +1,12 @@
+import { Component } from "./Component"
 import { wrapToVdom } from "./utils"
 
 /** 创建 VDOM */
 export function createElement<P extends Props>(
   type: VDOMType<P>,
   props: null | P,
-  ...children: (string | number | VDOM)[]
-): VDOM {
+  ...children: (string | number | VDOM<P>)[]
+): VDOM<P> {
   if (props === null) props = {} as P
   if (children.length) {
     props.children = children.length === 1
@@ -22,6 +23,7 @@ export function createElement<P extends Props>(
 
 const React = {
   createElement,
+  Component,
 }
 
 export default React
