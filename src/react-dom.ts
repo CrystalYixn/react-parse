@@ -9,20 +9,33 @@ function render(vdom: VDOM, container: DOM) {
   container.appendChild(dom)
 }
 
+function isNormalVDOM(vdom: VDOM): vdom is NormalVDOM {
+  const { type } = vdom
+  const typeName = typeof type
+  return typeName === 'string' || typeName === 'symbol'
+}
+
+function isClassVDOM(vdom: VDOM): vdom is ClassVDOM {
+  const { type } = vdom
+  return 'isReactComponent' in type
+}
+
 /** 将 vdom 转换为真实 dom */
 function createDom(vdom: VDOM): DOM {
   let { type, props } = vdom
   let dom: DOM
-  if (type === REACT_TEXT) {
-    dom  = document.createTextNode(props.content || '')
-  } else if (typeof type === 'function') {
-    if ('isReactComponent' in type) {
-      dom = mountClassComponent(vdom as ClassVDOM)
+  if (isNormalVDOM(vdom)) {
+    if (type === REACT_TEXT) {
+      dom  = document.createTextNode(props.content || '')
     } else {
-      dom = mountFunctionComponent(vdom as FunctionVDOM)
+      dom = document.createElement(type)
     }
   } else {
-    dom = document.createElement(type)
+    if (isClassVDOM(vdom)) {
+      return mountClassComponent(vdom)
+    } else {
+      return mountFunctionComponent(vdom)
+    }
   }
   // 处理 props
   if (props) {
@@ -37,26 +50,26 @@ function createDom(vdom: VDOM): DOM {
   }
   // 记录真实 dom
   // QA? 这里不是所有组件都会绑定有 dom 属性吗? findDOM 不能直接返回吗
+  // A 类组件和函数组件 return 了, 所以没有 dom 属性
   vdom.dom = dom
   return dom
 }
 
 export function patch(oldVdom: VDOM, newVdom: VDOM) {
   const dom = findDOM(oldVdom)
-  newVdom.dom = dom
   dom.parentNode?.replaceChildren(createDom(newVdom))
 }
 
 function findDOM(vdom: VDOM) {
-  const { type } = vdom
-  if (typeof type === 'function') {
-    if ('oldRenderVdom' in vdom && vdom.oldRenderVdom) {
-      return findDOM(vdom.oldRenderVdom)
+  if (isNormalVDOM(vdom)) {
+    // 首次渲染后一定存在, 第一次执行 findDOM 在渲染后
+    return vdom.dom!
+  } else {
+    if ('renderVdom' in vdom && vdom.renderVdom) {
+      return findDOM(vdom.renderVdom)
     } else {
       return document.createTextNode('报错啦')
     }
-  } else {
-    return vdom.dom!
   }
 }
 
@@ -89,7 +102,7 @@ function reconcileChildren(children: VDOM[], parent: DOM) {
 function mountFunctionComponent(vdom: FunctionVDOM) {
   const { type, props } = vdom
   const renderVdom = type(props)
-  vdom.oldRenderVdom = renderVdom
+  vdom.renderVdom = renderVdom
   return createDom(renderVdom)
 }
 
@@ -97,10 +110,11 @@ function mountFunctionComponent(vdom: FunctionVDOM) {
 function mountClassComponent(vdom: ClassVDOM) {
   const { type, props } = vdom
   const instance = new type(props)
-  // QA 此处执行后的 renderVdom 也可能是组件?那 oldRenderVdom 不就挂载到了组件上吗
+  // QA 此处执行后的 renderVdom 也可能是组件?那 renderVdom 不就挂载到了组件上吗
+  // A 就是需要挂载形成组件链
   const renderVdom = instance.render()
   // 组件 vdom 记录 render 生成的 vdom 用于构成组件链, 可以找到渲染 vdom 上的真实 dom
-  vdom.oldRenderVdom = renderVdom
+  vdom.renderVdom = renderVdom
   // 组件实例记录当前渲染的 vdom, 用于渲染时比较更新
   instance.oldRenderVdom = renderVdom
   return createDom(renderVdom)

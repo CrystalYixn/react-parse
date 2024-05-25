@@ -19,21 +19,21 @@ declare global {
 
   type StdVDOM<P extends Props = StdProps> = {
     props: P
-    dom?: DOM
   }
 
   type FunctionVDOM<P extends Props = StdProps> = {
     type: FunctionVDOMType<P>
-    oldRenderVdom?: VDOM<P>
+    renderVdom?: VDOM<P>
   } & StdVDOM<P>
 
   type ClassVDOM<P extends Props = StdProps> = {
     type: typeof Component<P>
-    oldRenderVdom?: VDOM<P>
+    renderVdom?: VDOM<P>
   } & StdVDOM<P>
 
   type NormalVDOM = {
     type: REACT_TEXT | string
+    dom?: DOM
   } & StdVDOM
 
   type Props = StdProps & { [k: string]: any }

@@ -23,6 +23,7 @@ export class Component<P extends Props = Props> {
   forceUpdate() {
     const { oldRenderVdom } = this
     // QA 这里产生的也可能是组件而不是真实 vdom, 怎么处理?
+    // A path 方法接收的就是 VDOM, 内部通过 findDOM 按渲染链查找
     const renderVdom = this.render()
     // 通过shouldUpdate 调用时必定渲染过至少一次
     patch(oldRenderVdom!, renderVdom)
