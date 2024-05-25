@@ -18,7 +18,8 @@ declare global {
     FunctionVDOM<P> | ClassVDOM<P> | NormalVDOM
 
   type StdVDOM<P extends Props = StdProps> = {
-    props: P
+    props: P,
+    ref?: { current: Component | Node }
   }
 
   type FunctionVDOM<P extends Props = StdProps> = {

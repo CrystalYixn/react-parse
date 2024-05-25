@@ -23,7 +23,7 @@ function isClassVDOM(vdom: VDOM): vdom is ClassVDOM {
 
 /** 将 vdom 转换为真实 dom */
 function createDom(vdom: VDOM): DOM {
-  let { type, props } = vdom
+  let { type, props, ref } = vdom
   let dom: DOM
   if (isNormalVDOM(vdom)) {
     if (type === REACT_TEXT) {
@@ -53,6 +53,7 @@ function createDom(vdom: VDOM): DOM {
   // QA? 这里不是所有组件都会绑定有 dom 属性吗? findDOM 不能直接返回吗
   // A 类组件和函数组件 return 了, 所以没有 dom 属性
   vdom.dom = dom
+  ref && (ref.current = dom)
   return dom
 }
 
@@ -110,13 +111,14 @@ function mountFunctionComponent(vdom: FunctionVDOM) {
 
 /** 调用 type() 创建类组件实例, 执行 render 成员函数, 并将 vdom 转为真实 dom */
 function mountClassComponent(vdom: ClassVDOM) {
-  const { type, props } = vdom
+  const { type, props, ref } = vdom
   const instance = new type(props)
   // QA 此处执行后的 renderVdom 也可能是组件?那 renderVdom 不就挂载到了组件上吗
   // A 就是需要挂载形成组件链
   const renderVdom = instance.render()
   // 组件 vdom 记录 render 生成的 vdom 用于构成组件链, 可以找到渲染 vdom 上的真实 dom
   vdom.renderVdom = renderVdom
+  ref && (ref.current = instance)
   // 组件实例记录当前渲染的 vdom, 用于渲染时比较更新
   instance.oldRenderVdom = renderVdom
   return createDom(renderVdom)
