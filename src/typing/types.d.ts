@@ -11,9 +11,9 @@ declare global {
   type FunctionVDOMType<P extends Props = StdProps> = (props: P) => VDOM<P>
 
   // 给了默认值有什么影响?
-  // 拥有默认值后时, 仅使用默认值中的属性或不使用相关属性时不再需要继续传递
-  // 不给默认值会强制要求传入泛型, 如果大部分都是默认类型的泛型则推荐默认值? 默认值一定是最小范围的
-  // 
+  // 拥有默认值后时，可以进行逆推导类型，不需要再传入，默认值推荐给最小范围对象
+  // 不给默认值有什么影响？
+  // 强制要求传入泛型
   type VDOM<P extends Props = StdProps> =
     FunctionVDOM<P> | ClassVDOM<P> | NormalVDOM
 
@@ -43,5 +43,12 @@ declare global {
     content?: string
   }
 
-  type DOM = HTMLElement | Text
+  type DOM = (HTMLElement | Text) & {
+    store?: { [eventName: string]: (...args: unknown[]) => unknown }
+  }
+
+  type EventType = Exclude<
+    keyof GlobalEventHandlers,
+    'onerror' | 'removeEventListener' | 'addEventListener'
+  >
 }

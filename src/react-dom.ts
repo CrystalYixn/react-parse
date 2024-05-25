@@ -1,4 +1,5 @@
 import { REACT_TEXT } from '@/constants'
+import { addEvent } from './event'
 
 // QA? 为什么需要声明这么多次 P extends Props
 // A 因为这些函数是散落在不同处直接无关联的, 所以每一个都需要重新声明
@@ -86,7 +87,8 @@ function updateProps(dom: DOM, oldProps: Props, newProps: Props) {
         dom.style[styleName as any] = prop[styleName]
       }
     } else if (key.startsWith('on')) {
-      Reflect.set(dom, key.toLocaleLowerCase(), newProps[key])
+      // QA 事件都走的批量更新，什么情况下会触发单个更新？
+      addEvent(dom, (key.toLocaleLowerCase()) as EventType, newProps[key])
     } else {
       Reflect.set(dom, key, newProps[key])
     }

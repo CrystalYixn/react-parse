@@ -1,6 +1,17 @@
 import { createElement } from "./react"
 import { patch } from "./react-dom"
 
+export const updateQueue = {
+  isBatchingUpdate: false,
+  updaters: [] as Updater[],
+  batchUpdate() {
+    this.updaters.forEach(updater => {
+      updater.updateComponent()
+    })
+    this.updaters.length = 0
+  }
+}
+
 export class Component<P extends Props = Props> {
   static isReactComponent = {}
   props: P
@@ -31,7 +42,7 @@ export class Component<P extends Props = Props> {
   }
 }
 
-class Updater<P extends Props> {
+class Updater<P extends Props = StdProps> {
   instance: Component<P>
   pendingStates: P[] = []
   callbacks: (() => void)[] = []
@@ -48,7 +59,11 @@ class Updater<P extends Props> {
   }
 
   emitUpdate() {
-    this.updateComponent()
+    if (updateQueue.isBatchingUpdate) {
+      updateQueue.updaters.push(this)
+    } else {
+      this.updateComponent()
+    }
   }
 
   updateComponent() {

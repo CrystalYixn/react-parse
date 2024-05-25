@@ -6,24 +6,18 @@ import ReactDOM from './react-dom'
 
 class Counter extends Component {
   state = { number: 0 }
-  constructor(props: {}) {
-    super(props)
-  }
 
   render() {
-    // const x = React.createElement(
-    //   'div',
-    //   null,
-    //   React.createElement('button', { onClick: this.handleClick }, '+1')
-    // )
-    // return x
-    return (<div>
+    console.log(` ================== render 方法执行 ================= `, )
+    return <div>
       { this.state.number }
       <button onClick={this.handleClick}>+1</button>
-    </div> as unknown as VDOM)
+    </div>
   }
 
   handleClick = () => {
+    this.setState({ number: this.state.number + 1 })
+    this.setState({ number: this.state.number + 1 })
     this.setState({ number: this.state.number + 1 })
   }
 }
