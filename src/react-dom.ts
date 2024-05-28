@@ -112,10 +112,13 @@ function mountFunctionComponent(vdom: FunctionVDOM) {
 /** 调用 type() 创建类组件实例, 执行 render 成员函数, 并将 vdom 转为真实 dom */
 function mountClassComponent(vdom: ClassVDOM) {
   const { type, props, ref } = vdom
-  const instance = new type(props)
+  let defaultProps = type.defaultProps || {}
+  const instance = new type({ ...defaultProps, ...props })
+  instance.componentWillMount?.()
   // QA 此处执行后的 renderVdom 也可能是组件?那 renderVdom 不就挂载到了组件上吗
   // A 就是需要挂载形成组件链
   const renderVdom = instance.render()
+  instance.componentDidMount?.()
   // 组件 vdom 记录 render 生成的 vdom 用于构成组件链, 可以找到渲染 vdom 上的真实 dom
   vdom.renderVdom = renderVdom
   ref && (ref.current = instance)

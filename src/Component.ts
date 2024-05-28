@@ -14,6 +14,7 @@ export const updateQueue = {
 
 export class Component<P extends Props = Props> {
   static isReactComponent = {}
+  static defaultProps?: Props
   props: P
   state: P = {} as P
   updater: Updater<P>
@@ -22,6 +23,13 @@ export class Component<P extends Props = Props> {
     this.props = props
     this.updater = new Updater(this)
   }
+
+  componentWillMount?(): void
+  componentDidMount?(): void
+  /** 当 props 或 state 变化时依赖此方法可以控制是否更新 */
+  shouldComponentUpdate?(nextProps: P | undefined, nextState: P): boolean
+  componentWillUpdate?(): void
+  componentDidUpdate?(): void
 
   render() {
     return createElement('', null)
@@ -39,12 +47,14 @@ export class Component<P extends Props = Props> {
     // 通过shouldUpdate 调用时必定渲染过至少一次
     patch(oldRenderVdom!, renderVdom)
     this.oldRenderVdom = renderVdom
+    this.componentDidUpdate?.()
   }
 }
 
 class Updater<P extends Props = StdProps> {
   instance: Component<P>
   pendingStates: P[] = []
+  nextProps?: P
   callbacks: (() => void)[] = []
   constructor(instance: Component<P>) {
     this.instance = instance
@@ -58,7 +68,8 @@ class Updater<P extends Props = StdProps> {
     this.emitUpdate()
   }
 
-  emitUpdate() {
+  emitUpdate(nextProps?: P) {
+    this.nextProps  = nextProps
     if (updateQueue.isBatchingUpdate) {
       updateQueue.updaters.push(this)
     } else {
@@ -67,9 +78,9 @@ class Updater<P extends Props = StdProps> {
   }
 
   updateComponent() {
-    const { instance, pendingStates } = this
+    const { instance, pendingStates, nextProps } = this
     if (pendingStates.length > 0) {
-      shouldUpdate(instance, this.getState())
+      shouldUpdate(instance, nextProps, this.getState())
     }
   }
 
@@ -87,7 +98,20 @@ class Updater<P extends Props = StdProps> {
 }
 
 /** 修改 state 的值, 组件强制更新 */
-function shouldUpdate(instance: Component, nextState: Props) {
+function shouldUpdate(
+  instance: Component,
+  nextProps: Props | undefined,
+  nextState: Props
+) {
+  let willUpdate = instance.shouldComponentUpdate?.(
+    nextProps, nextState
+  ) === true ? true : false
+  if (willUpdate) {
+    instance.componentWillUpdate?.()
+  }
+  nextProps && (instance.props = nextProps)
   instance.state = nextState
-  instance.forceUpdate()
+  if (willUpdate) {
+    instance.forceUpdate()
+  }
 }
