@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
-import type { REACT_TEXT } from '@/constants'
+import type { REACT_TEXT, REACT_FORWARD_REF_TYPE } from '@/constants'
 import type { Component } from '@/Component'
 
 declare global {
@@ -15,7 +15,7 @@ declare global {
   // 不给默认值有什么影响？
   // 强制要求传入泛型
   type VDOM<P extends Props = StdProps> =
-    FunctionVDOM<P> | ClassVDOM<P> | NormalVDOM
+    FunctionVDOM<P> | ClassVDOM<P> | NormalVDOM | ForwardVDOM
 
   type StdVDOM<P extends Props = StdProps> = {
     props: P,
@@ -37,6 +37,14 @@ declare global {
     dom?: DOM
   } & StdVDOM
 
+  type ForwardVDOM<P extends Props = StdProps> = {
+    type: {
+      $$typeof: REACT_FORWARD,
+      render: (p: Props, ref: Ref) => React.JSX.Element
+    }
+    renderVdom?: VDOM<P>
+  } & StdVDOM
+
   type Props = StdProps & { [k: string]: any }
   type StdProps = {
     children?: VDOM | VDOM[]
@@ -52,4 +60,6 @@ declare global {
     keyof GlobalEventHandlers,
     'onerror' | 'removeEventListener' | 'addEventListener'
   >
+
+  type Ref<T> = { current: T | null }
 }

@@ -21,6 +21,11 @@ function isClassVDOM(vdom: VDOM): vdom is ClassVDOM {
   return 'isReactComponent' in type
 }
 
+function isForwardVDOM(vdom: VDOM): vdom is ForwardVDOM {
+  const { type } = vdom
+  return '$$typeof' in type
+}
+
 /** 将 vdom 转换为真实 dom */
 function createDom(vdom: VDOM): DOM {
   let { type, props, ref } = vdom
@@ -31,6 +36,8 @@ function createDom(vdom: VDOM): DOM {
     } else {
       dom = document.createElement(type)
     }
+  } else if (isForwardVDOM(vdom)) {
+    return mountForwardComponent(vdom)
   } else {
     if (isClassVDOM(vdom)) {
       return mountClassComponent(vdom)
@@ -104,7 +111,18 @@ function reconcileChildren(children: VDOM[], parent: DOM) {
 /** 执行 type() 得到 vdom, 将 vdom 转为真实 dom 并返回 */
 function mountFunctionComponent(vdom: FunctionVDOM) {
   const { type, props } = vdom
+  // 函数式组件挂载传递 ref 时与 mountForwardComponent 完全一致
+  // 甚至不用套一层 forwardRef 方法
+  // const renderVdom = type(props, ref)
   const renderVdom = type(props)
+  vdom.renderVdom = renderVdom
+  return createDom(renderVdom)
+}
+
+/** 从 type 中解构出 render 方法，并将 ref 对象传递给 render 方法保存 dom */
+function mountForwardComponent(vdom: ForwardVDOM) {
+  const { type: { render }, props, ref } = vdom
+  const renderVdom = render(props, ref)
   vdom.renderVdom = renderVdom
   return createDom(renderVdom)
 }

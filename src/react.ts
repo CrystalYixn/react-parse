@@ -1,4 +1,5 @@
 import { Component } from "./Component"
+import { REACT_FORWARD_REF_TYPE } from "./constants"
 import { wrapToVdom } from "./utils"
 
 /** 创建 VDOM */
@@ -23,19 +24,16 @@ export function createElement<P extends Props>(
   }
 }
 
-export function createRef<T>(): { current: T | null } {
+export function createRef<T>(): Ref<T> {
   return { current: null }
 }
 
-export function forwardRef(
-  funcComponent: (p: Props, ref: ReturnType<typeof createRef<HTMLInputElement>>) => VDOM
+export function forwardRef<T>(
+  funcComponent: (p: Props, ref: Ref<T>) => VDOM
 ) {
-  return class extends Component {
-    context = null
-    refs = {}
-    render() {
-      return funcComponent(this.props, this.props.ref)
-    }
+  return {
+    $$typeof: REACT_FORWARD_REF_TYPE,
+    render: funcComponent
   }
 }
 

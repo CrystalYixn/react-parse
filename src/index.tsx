@@ -4,7 +4,14 @@ import React, { createRef, forwardRef } from './react'
 import { Component } from './Component'
 import ReactDOM from './react-dom'
 
+function TextInput(props: Props, ref: Ref<HTMLInputElement>) {
+  return <input ref={ref} />
+}
+
+const ForwardedTextInput = forwardRef(TextInput)
+
 class Counter extends Component {
+  textInputRef = createRef<HTMLParagraphElement>()
   constructor(props: any) {
     super(props)
     this.state = { number: 0 }
@@ -27,7 +34,8 @@ class Counter extends Component {
   }
 
   handleClick = () => {
-    this.setState({ number: this.state.number + 1 })
+    // this.setState({ number: this.state.number + 1 })
+    this.textInputRef.current?.focus()
   }
 
   render() {
@@ -35,6 +43,8 @@ class Counter extends Component {
     return (
       <div>
         <p>{this.state.number}</p>
+        {/* @ts-ignore */}
+        <ForwardedTextInput ref={this.textInputRef} />
         <button onClick={this.handleClick}>+</button>
       </div>
     )
