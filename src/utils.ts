@@ -12,7 +12,10 @@ export function wrapToVdom<P extends Props>(
   }
 }
 
-export function assert(condition: boolean, msg: string): asserts condition {
+export function assert(
+  condition: boolean,
+  msg = 'assert error'
+): asserts condition {
   if (!condition) {
     throw new Error(msg)
   }

@@ -39,7 +39,7 @@ declare global {
 
   type ForwardVDOM<P extends Props = StdProps> = {
     type: {
-      $$typeof: REACT_FORWARD,
+      $$typeof: typeof REACT_FORWARD_REF_TYPE,
       render: (p: Props, ref: Ref) => React.JSX.Element
     }
     renderVdom?: VDOM<P>
@@ -53,7 +53,8 @@ declare global {
   }
 
   type DOM = (HTMLElement | Text) & {
-    store?: { [eventName: string]: (...args: unknown[]) => unknown }
+    store?: { [eventName: string]: (...args: unknown[]) => unknown },
+    componentDidMount?: () => void,
   }
 
   type EventType = Exclude<

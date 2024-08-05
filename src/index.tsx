@@ -1,50 +1,81 @@
 // import React, { Component } from 'react'
 // import ReactDOM from 'react-dom'
-import React, { createRef, forwardRef } from './react'
+import React from './react'
 import { Component } from './Component'
 import ReactDOM from './react-dom'
 
-function TextInput(props: Props, ref: Ref<HTMLInputElement>) {
-  return <input ref={ref} />
+type ChildProps = {
+  count: number
 }
 
-const ForwardedTextInput = forwardRef(TextInput)
+type Props = {}
+type State = {
+  number: number
+}
 
-class Counter extends Component {
-  textInputRef = createRef<HTMLParagraphElement>()
-  constructor(props: any) {
+class ChildCounter extends Component<ChildProps> {
+  // static defaultProps = {
+  //   name: 'ChildCounter'
+  // }
+  componentWillMount() {
+    console.log(` ================== ChildCounter 1.componentWillMount ================= `, )
+  }
+  render() {
+    console.log(` ================== ChildrenCount 2.render ================= `, )
+    return <div>{this.props.count}</div>
+  }
+  componentDidMount() {
+    console.log(` ================== ChildCounter 3.componentDidMount ================= `, )
+  }
+  shouldComponentUpdate(nextProps: ChildProps, nextState: any) {
+    return nextProps.count % 3 === 0
+  }
+  componentWillReceiveProps() {
+    console.log(` ================== ChildCounter 4.componentWillReceiveProps ================= `, )
+
+  }
+  componentWillUnmount() {
+    console.log(` ================== ChildCounter 5.componentWillUnmount ================= `, )
+  }
+}
+
+class Counter extends Component<Props, State> {
+  constructor(props: Props) {
+    console.log('1.constructor')
     super(props)
     this.state = { number: 0 }
   }
   componentWillMount() {
-    console.log('componentWillMount')
+    console.log('2.componentWillMount')
   }
   componentDidMount() {
-    console.log('componentDidMount')
+    console.log('4.componentDidMount')
   }
-  shouldComponentUpdate(nextProps: any, nextState: { number: number }) {
-    console.log('ShouldComponentUpdate')
+  shouldComponentUpdate(nextProps: any, nextState: State) {
+    console.log('5.ShouldComponentUpdate')
     return nextState.number % 2 === 0
   }
   componentWillUpdate() {
-    console.log('componentWillUpdate')
+    console.log('6.componentWillUpdate')
   }
   componentDidUpdate() {
-    console.log('componentDidUpdate')
+    console.log('7.componentDidUpdate')
   }
 
   handleClick = () => {
-    // this.setState({ number: this.state.number + 1 })
-    this.textInputRef.current?.focus()
+    this.setState({ number: this.state.number + 1 })
   }
 
   render() {
-    console.log('render')
+    console.log('3.render')
     return (
       <div>
         <p>{this.state.number}</p>
-        {/* @ts-ignore */}
-        <ForwardedTextInput ref={this.textInputRef} />
+        {this.state.number === 4
+          ? null
+          : <ChildCounter count={this.state.number}/>
+        }
+        {/* {React.createElement(ChildCounter, { count: this.state.number })} */}
         <button onClick={this.handleClick}>+</button>
       </div>
     )
@@ -52,5 +83,6 @@ class Counter extends Component {
 }
 
 const element = React.createElement(Counter, null)
+console.log(` ================== React ================= `, React)
 
 ReactDOM.render(element, document.getElementById('root')!)

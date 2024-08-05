@@ -12,12 +12,14 @@ export const updateQueue = {
   }
 }
 
-export class Component<P extends Props = Props> {
+export class Component<P extends Props = {}, S = {}> {
   static isReactComponent = {}
   static defaultProps?: Props
   props: P
-  state: P = {} as P
+  state: Readonly<S> = {} as S
   updater: Updater<P>
+  context: any
+  refs: any
   oldRenderVdom: VDOM | null = null
   constructor(props: P) {
     this.props = props
@@ -26,8 +28,10 @@ export class Component<P extends Props = Props> {
 
   componentWillMount?(): void
   componentDidMount?(): void
-  /** 当 props 或 state 变化时依赖此方法可以控制是否更新 */
-  shouldComponentUpdate?(nextProps: P | undefined, nextState: P): boolean
+  /** 当 props 或 state 变化时依赖此方法可以控制是否更新
+   * 像是手动控制可以减少更新频率
+   */
+  shouldComponentUpdate?(nextProps: Readonly<P> | undefined, nextState: Readonly<S>): boolean
   componentWillUpdate?(): void
   componentDidUpdate?(): void
 

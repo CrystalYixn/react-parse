@@ -8,6 +8,7 @@ import { addEvent } from './event'
 function render(vdom: VDOM, container: DOM) {
   const dom = createDom(vdom)
   container.appendChild(dom)
+  dom.componentDidMount?.()
 }
 
 function isNormalVDOM(vdom: VDOM): vdom is NormalVDOM {
@@ -132,17 +133,22 @@ function mountClassComponent(vdom: ClassVDOM) {
   const { type, props, ref } = vdom
   let defaultProps = type.defaultProps || {}
   const instance = new type({ ...defaultProps, ...props })
-  instance.componentWillMount?.()
+  const {
+    componentWillMount,
+    componentDidMount,
+  } = instance
+  componentWillMount?.()
   // QA 此处执行后的 renderVdom 也可能是组件?那 renderVdom 不就挂载到了组件上吗
   // A 就是需要挂载形成组件链
   const renderVdom = instance.render()
-  instance.componentDidMount?.()
   // 组件 vdom 记录 render 生成的 vdom 用于构成组件链, 可以找到渲染 vdom 上的真实 dom
   vdom.renderVdom = renderVdom
   ref && (ref.current = instance)
   // 组件实例记录当前渲染的 vdom, 用于渲染时比较更新
   instance.oldRenderVdom = renderVdom
-  return createDom(renderVdom)
+  const dom = createDom(renderVdom)
+  componentDidMount && (dom.componentDidMount = componentDidMount)
+  return dom
 }
 
 const ReactDOM = {
