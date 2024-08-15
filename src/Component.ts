@@ -1,5 +1,5 @@
 import { createElement } from "./react"
-import { patch } from "./react-dom"
+import { findDOM, compareTwoVdom } from "./react-dom"
 
 export const updateQueue = {
   isBatchingUpdate: false,
@@ -34,6 +34,8 @@ export class Component<P extends Props = {}, S = {}> {
   shouldComponentUpdate?(nextProps: Readonly<P> | undefined, nextState: Readonly<S>): boolean
   componentWillUpdate?(): void
   componentDidUpdate?(): void
+  componentWillReceiveProps?(): void
+  componentWillUnmount?(): void
 
   render() {
     return createElement('', null)
@@ -49,7 +51,7 @@ export class Component<P extends Props = {}, S = {}> {
     // A path 方法接收的就是 VDOM, 内部通过 findDOM 按渲染链查找
     const renderVdom = this.render()
     // 通过shouldUpdate 调用时必定渲染过至少一次
-    patch(oldRenderVdom!, renderVdom)
+    compareTwoVdom((findDOM(oldRenderVdom!).parentNode)!, oldRenderVdom!, renderVdom)
     this.oldRenderVdom = renderVdom
     this.componentDidUpdate?.()
   }
@@ -73,7 +75,8 @@ class Updater<P extends Props = StdProps> {
   }
 
   emitUpdate(nextProps?: P) {
-    this.nextProps  = nextProps
+    // 有 nextProps 时一定是子组件收到更新主动触发
+    this.nextProps = nextProps
     if (updateQueue.isBatchingUpdate) {
       updateQueue.updaters.push(this)
     } else {
@@ -83,7 +86,7 @@ class Updater<P extends Props = StdProps> {
 
   updateComponent() {
     const { instance, pendingStates, nextProps } = this
-    if (pendingStates.length > 0) {
+    if (nextProps || pendingStates.length > 0) {
       shouldUpdate(instance, nextProps, this.getState())
     }
   }

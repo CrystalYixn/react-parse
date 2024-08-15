@@ -22,6 +22,11 @@ function isClassVDOM(vdom: VDOM): vdom is ClassVDOM {
   return 'isReactComponent' in type
 }
 
+function isFunctionVDom(vdom: VDOM): vdom is FunctionVDOM {
+  const { type } = vdom
+  return typeof type === 'function' && !('isReactComponent' in type)
+}
+
 function isForwardVDOM(vdom: VDOM): vdom is ForwardVDOM {
   const { type } = vdom
   return '$$typeof' in type
@@ -65,12 +70,43 @@ function createDom(vdom: VDOM): DOM {
   return dom
 }
 
-export function patch(oldVdom: VDOM, newVdom: VDOM) {
-  const dom = findDOM(oldVdom)
-  dom.parentNode?.replaceChildren(createDom(newVdom))
+/** 根据新旧孩子类型判断如何更新 */
+export function compareTwoVdom(
+  parentDom: ParentNode,
+  oldVdom: VDOM | null,
+  newVdom: VDOM | null,
+  nextDOM?: DOM | null,
+) {
+  // 新老都有
+  if (oldVdom && newVdom) {
+    const currentDom = findDOM(oldVdom)
+    // 新老类型不一样
+    if (oldVdom.type !== newVdom.type) {
+      if (isClassVDOM(oldVdom)) oldVdom.instance.componentWillUnmount?.()
+      const newDom = createDom(newVdom)
+      currentDom.parentNode?.replaceChild(newDom, currentDom)
+      newDom.componentDidMount?.()
+    } else {
+      updateElement(oldVdom, newVdom)
+    }
+    // 只有老的
+  } else if (oldVdom) {
+    const currentDom = findDOM(oldVdom)
+    if (isClassVDOM(oldVdom)) oldVdom.instance.componentWillUnmount?.()
+    parentDom?.removeChild(currentDom)
+    // 只有新的
+  } else if (newVdom) {
+    const newDom = createDom(newVdom)
+    if (nextDOM) {
+      parentDom.insertBefore(newDom, nextDOM)
+    } else {
+      parentDom?.append(newDom)
+    }
+    newDom.componentDidMount?.()
+  }
 }
 
-function findDOM(vdom: VDOM) {
+export function findDOM(vdom: VDOM) {
   if (isNormalVDOM(vdom)) {
     // 首次渲染后一定存在, 第一次执行 findDOM 在渲染后
     return vdom.dom!
@@ -78,9 +114,65 @@ function findDOM(vdom: VDOM) {
     if ('renderVdom' in vdom && vdom.renderVdom) {
       return findDOM(vdom.renderVdom)
     } else {
-      return document.createTextNode('报错啦')
+      // QA 什么情况下会走到 else？
+      const div = document.createElement('div')
+      div.innerHTML = '报错啦'
+      return div
     }
   }
+}
+
+/** 新旧孩子类型相同时的 diff 更新 */
+function updateElement(oldVdom: VDOM, newVdom: VDOM) {
+  if (oldVdom.type === REACT_TEXT && newVdom.type === REACT_TEXT && isNormalVDOM(newVdom)) {
+    let currentDOM = newVdom.dom = findDOM(oldVdom)
+    if (newVdom.props.content && oldVdom.props.content !== newVdom.props.content) {
+      currentDOM.textContent = newVdom.props.content
+    }
+  } else if (typeof oldVdom.type === 'string' && isNormalVDOM(newVdom)) {
+    const currentDom = newVdom.dom = findDOM(oldVdom)
+    updateProps(currentDom, oldVdom.props, newVdom.props)
+    updateChildren(currentDom as HTMLElement, oldVdom.props.children, newVdom.props.children)
+  } else if (isClassVDOM(oldVdom) && isClassVDOM(newVdom)) {
+    updateClassComponent(oldVdom, newVdom)
+  } else if (isFunctionVDom(oldVdom) && isFunctionVDom(newVdom)) {
+    updateFunctionComponent(oldVdom, newVdom)
+  }
+}
+
+function updateChildren(
+  parentDOM: ParentNode,
+  oldVChildren: VDOM[] | VDOM | null = [],
+  newVChildren: VDOM[] | VDOM | null = [],
+) {
+  const oc = Array.isArray(oldVChildren) ? oldVChildren : [oldVChildren]
+  const nc = Array.isArray(newVChildren) ? newVChildren : [newVChildren]
+  const maxChildren = oc.length > nc.length ? oc : nc
+  maxChildren.forEach((c, i) => {
+    const nextVdom = oc.find(
+      // 一定是当前元素之后的元素 && 
+      (ovChild, idx) => idx > i && ovChild && findDOM(ovChild)
+    )
+    compareTwoVdom(parentDOM, oc[i], nc[i], nextVdom && findDOM(nextVdom))
+  })
+}
+
+/** 更新类组件 */
+function updateClassComponent(oldVdom: ClassVDOM, newVdom: ClassVDOM) {
+  // 同步新旧 vdom 上的挂载属性
+  const instance = newVdom.instance = oldVdom.instance
+  newVdom.renderVdom = oldVdom.renderVdom
+  instance.componentWillReceiveProps?.()
+  instance.updater.emitUpdate(newVdom.props)
+}
+
+/** 更新函数式组件 */
+function updateFunctionComponent(oldVdom: FunctionVDOM, newVdom: FunctionVDOM) {
+  const parentDOM = findDOM(oldVdom).parentNode!
+  const { type, props } = newVdom
+  const renderVdom = type(props)
+  newVdom.renderVdom = renderVdom
+  compareTwoVdom(parentDOM, oldVdom.renderVdom!, newVdom.renderVdom)
 }
 
 /** 更新组件属性, 不包括 children */
@@ -141,6 +233,7 @@ function mountClassComponent(vdom: ClassVDOM) {
   // QA 此处执行后的 renderVdom 也可能是组件?那 renderVdom 不就挂载到了组件上吗
   // A 就是需要挂载形成组件链
   const renderVdom = instance.render()
+  vdom.instance = instance
   // 组件 vdom 记录 render 生成的 vdom 用于构成组件链, 可以找到渲染 vdom 上的真实 dom
   vdom.renderVdom = renderVdom
   ref && (ref.current = instance)

@@ -30,6 +30,7 @@ declare global {
   type ClassVDOM<P extends Props = StdProps> = {
     type: typeof Component<P>
     renderVdom?: VDOM<P>
+    instance: Component<P>
   } & StdVDOM<P>
 
   type NormalVDOM = {

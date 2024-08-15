@@ -18,48 +18,49 @@ class ChildCounter extends Component<ChildProps> {
   //   name: 'ChildCounter'
   // }
   componentWillMount() {
-    console.log(` ================== ChildCounter 1.componentWillMount ================= `, )
+    console.log(`ChildCounter 1.componentWillMount`, )
   }
   render() {
-    console.log(` ================== ChildrenCount 2.render ================= `, )
-    return <div>{this.props.count}</div>
+    console.log(`ChildCounter 2.render`, )
+    return <div>ChildCounter:{this.props.count}</div>
   }
   componentDidMount() {
-    console.log(` ================== ChildCounter 3.componentDidMount ================= `, )
+    console.log(`ChildCounter 3.componentDidMount`, )
   }
   shouldComponentUpdate(nextProps: ChildProps, nextState: any) {
+    console.log(`ChildCounter 5.shouldComponentUpdate`, )
     return nextProps.count % 3 === 0
   }
   componentWillReceiveProps() {
-    console.log(` ================== ChildCounter 4.componentWillReceiveProps ================= `, )
+    console.log(`ChildCounter 4.componentWillReceiveProps`, )
 
   }
   componentWillUnmount() {
-    console.log(` ================== ChildCounter 5.componentWillUnmount ================= `, )
+    console.log(`ChildCounter 6.componentWillUnmount`, )
   }
 }
 
 class Counter extends Component<Props, State> {
   constructor(props: Props) {
-    console.log('1.constructor')
+    console.log('Counter 1.constructor')
     super(props)
     this.state = { number: 0 }
   }
   componentWillMount() {
-    console.log('2.componentWillMount')
+    console.log('Counter 2.componentWillMount')
   }
   componentDidMount() {
-    console.log('4.componentDidMount')
+    console.log('Counter 4.componentDidMount')
   }
   shouldComponentUpdate(nextProps: any, nextState: State) {
-    console.log('5.ShouldComponentUpdate')
+    console.log('Counter 5.ShouldComponentUpdate')
     return nextState.number % 2 === 0
   }
   componentWillUpdate() {
-    console.log('6.componentWillUpdate')
+    console.log('Counter 6.componentWillUpdate')
   }
   componentDidUpdate() {
-    console.log('7.componentDidUpdate')
+    console.log('Counter 7.componentDidUpdate')
   }
 
   handleClick = () => {
@@ -67,10 +68,10 @@ class Counter extends Component<Props, State> {
   }
 
   render() {
-    console.log('3.render')
+    console.log('Counter 3.render')
     return (
       <div>
-        <p>{this.state.number}</p>
+        <p>Counter:{this.state.number}</p>
         {this.state.number === 4
           ? null
           : <ChildCounter count={this.state.number}/>
