@@ -5,7 +5,7 @@ export const updateQueue = {
   // 事件处理阶段，劫持了全局所有事件，在调用处理函数前标记为批量更新模式
   isBatchingUpdate: false,
   // 处理函数完成后执行并清空批量队列
-  updaters: [] as Updater[],
+  updaters: [] as Updater<any, any>[],
   batchUpdate() {
     this.updaters.forEach(updater => {
       updater.updateComponent()
@@ -14,12 +14,12 @@ export const updateQueue = {
   },
 }
 
-export class Component<P extends Props = {}, S = {}> {
+export class Component<P extends Props = {}, S = {}, G = any> {
   static isReactComponent = {}
   static defaultProps?: Props
   props: P
   state: Readonly<S> = {} as S
-  updater: Updater<P>
+  updater: Updater<P, S>
   context: any
   refs: any
   oldRenderVdom: VDOM | null = null
@@ -38,15 +38,16 @@ export class Component<P extends Props = {}, S = {}> {
     nextState: Readonly<S>
   ): boolean
   componentWillUpdate?(): void
-  componentDidUpdate?(): void
+  componentDidUpdate?(prevProps: Readonly<P>, prevState: Readonly<S>, snapshot: G): void
   componentWillReceiveProps?(): void
   componentWillUnmount?(): void
+  getSnapshotBeforeUpdate?(): G
 
   render() {
     return createElement('', null)
   }
 
-  setState(partialState: P, cb?: () => void) {
+  setState(partialState: S, cb?: () => void) {
     this.updater.addState(partialState, cb)
   }
 
@@ -55,6 +56,7 @@ export class Component<P extends Props = {}, S = {}> {
     // QA 这里产生的也可能是组件而不是真实 vdom, 怎么处理?
     // A path 方法接收的就是 VDOM, 内部通过 findDOM 按渲染链查找
     const renderVdom = this.render()
+    let snapshot = (this.getSnapshotBeforeUpdate?.()) as G
     // 通过shouldUpdate 调用时必定渲染过至少一次
     compareTwoVdom(
       findDOM(oldRenderVdom!).parentNode!,
@@ -62,20 +64,20 @@ export class Component<P extends Props = {}, S = {}> {
       renderVdom
     )
     this.oldRenderVdom = renderVdom
-    this.componentDidUpdate?.()
+    this.componentDidUpdate?.(this.props, this.state, snapshot)
   }
 }
 
-class Updater<P extends Props = StdProps> {
-  instance: Component<P>
-  pendingStates: P[] = []
+class Updater<P extends Props = StdProps, S = {}> {
+  instance: Component<P, S>
+  pendingStates: S[] = []
   nextProps?: P
   callbacks: (() => void)[] = []
-  constructor(instance: Component<P>) {
+  constructor(instance: Component<P, S>) {
     this.instance = instance
   }
 
-  addState(partialState: P, callback?: () => void) {
+  addState(partialState: S, callback?: () => void) {
     this.pendingStates.push(partialState)
     if (callback) {
       this.callbacks.push(callback)
@@ -117,10 +119,10 @@ class Updater<P extends Props = StdProps> {
 }
 
 /** 修改 state 的值, 组件强制更新 */
-function shouldUpdate(
-  instance: Component,
-  nextProps: Props | undefined,
-  nextState: Props
+function shouldUpdate<P extends Props = StdProps, S = {}>(
+  instance: Component<P, S>,
+  nextProps: P | undefined,
+  nextState: S
 ) {
   let willUpdate =
     !!instance.shouldComponentUpdate?.(nextProps, nextState) || true

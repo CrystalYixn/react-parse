@@ -4,77 +4,59 @@ import React from './react'
 import { Component } from './Component'
 import ReactDOM from './react-dom'
 
-type ChildProps = {
-  count: number
-}
-
 type Props = {}
 type State = {
-  number: number
+  messages: string[]
 }
 
-class ChildCounter extends Component<ChildProps> {
-  state = {
-    count: 0
+class ScrollList extends Component<Props, State> {
+  wrapper: React.RefObject<HTMLDivElement>
+  timer: NodeJS.Timeout | null = null
+  constructor(props: Props) {
+    super(props)
+    this.state = { messages: ['3', '2', '1', '0'] }
+    this.wrapper = React.createRef()
   }
-  componentWillMount() {
-    console.log(`ChildCounter 1.componentWillMount`, )
-  }
-  render() {
-    console.log(`ChildCounter 2.render`, )
-    return <div>ChildCounter:{this.state.count}</div>
+  addMessage = () => {
+    this.setState({ messages: [`${this.state.messages.length}`, ...this.state.messages] })
   }
   componentDidMount() {
-    console.log(`ChildCounter 3.componentDidMount`, )
-  }
-  static getDerivedStateFromProps(nextProps: ChildProps, prevState: any) {
-    
-    const { count } = nextProps
-    console.log('=============== getDerivedStateFromProps ===============', count);
-    return {...prevState, count:count*2}
+    this.timer = setInterval(() => {
+      this.addMessage()
+    }, 1000)
   }
   componentWillUnmount() {
-    console.log(`ChildCounter 6.componentWillUnmount`, )
+    clearInterval(this.timer!)
   }
-}
-
-class Counter extends Component<Props, State> {
-  constructor(props: Props) {
-    console.log('Counter 1.constructor')
-    super(props)
-    this.state = { number: 0 }
+  getSnapshotBeforeUpdate() {
+    return {
+      prevScrollHeight: this.wrapper.current!.scrollHeight,
+      prevScrollTop: this.wrapper.current!.scrollTop
+    }
   }
-  componentWillMount() {
-    console.log('Counter 2.componentWillMount')
-  }
-  componentDidMount() {
-    console.log('Counter 4.componentDidMount')
-  }
-  componentWillUpdate() {
-    console.log('Counter 6.componentWillUpdate')
-  }
-  componentDidUpdate() {
-    console.log('Counter 7.componentDidUpdate')
-  }
-
-  handleClick = () => {
-    this.setState({ number: this.state.number + 1 })
+  componentDidUpdate(prevProps: Props, prevState: State, snapshot: { prevScrollHeight: number; prevScrollTop: number }) {
+    const currentHeight = this.wrapper.current!.scrollHeight
+    const prevHeight = snapshot.prevScrollHeight
+    const prevTop = snapshot.prevScrollTop
+    this.wrapper.current!.scrollTop = currentHeight - prevHeight + prevTop
   }
 
   render() {
-    console.log('Counter 3.render')
+    let style = {
+      height: '100px',
+      width: '200px',
+      border: '1px solid red',
+      overflow: 'auto'
+    }
     return (
-      <div>
-        <p>Counter:{this.state.number}</p>
-        <ChildCounter count={this.state.number}/>
-        {/* {React.createElement(ChildCounter, { count: this.state.number })} */}
-        <button onClick={this.handleClick}>+</button>
+      <div ref={this.wrapper} style={style}>
+        {this.state.messages.map((message, index) => (
+          <div key={index}>{message}</div>
+        ))}
       </div>
     )
   }
 }
 
-const element = React.createElement(Counter, null)
-console.log(` ================== React ================= `, React)
-
+const element = React.createElement(ScrollList, null)
 ReactDOM.render(element, document.getElementById('root')!)

@@ -240,7 +240,7 @@ function mountClassComponent(vdom: ClassVDOM) {
   // 组件实例记录当前渲染的 vdom, 用于渲染时比较更新
   instance.oldRenderVdom = renderVdom
   const dom = createDom(renderVdom)
-  componentDidMount && (dom.componentDidMount = componentDidMount)
+  componentDidMount && (dom.componentDidMount = componentDidMount.bind(instance))
   return dom
 }
 
