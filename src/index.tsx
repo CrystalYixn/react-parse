@@ -14,26 +14,24 @@ type State = {
 }
 
 class ChildCounter extends Component<ChildProps> {
-  // static defaultProps = {
-  //   name: 'ChildCounter'
-  // }
+  state = {
+    count: 0
+  }
   componentWillMount() {
     console.log(`ChildCounter 1.componentWillMount`, )
   }
   render() {
     console.log(`ChildCounter 2.render`, )
-    return <div>ChildCounter:{this.props.count}</div>
+    return <div>ChildCounter:{this.state.count}</div>
   }
   componentDidMount() {
     console.log(`ChildCounter 3.componentDidMount`, )
   }
-  shouldComponentUpdate(nextProps: ChildProps, nextState: any) {
-    console.log(`ChildCounter 5.shouldComponentUpdate`, )
-    return nextProps.count % 3 === 0
-  }
-  componentWillReceiveProps() {
-    console.log(`ChildCounter 4.componentWillReceiveProps`, )
-
+  static getDerivedStateFromProps(nextProps: ChildProps, prevState: any) {
+    
+    const { count } = nextProps
+    console.log('=============== getDerivedStateFromProps ===============', count);
+    return {...prevState, count:count*2}
   }
   componentWillUnmount() {
     console.log(`ChildCounter 6.componentWillUnmount`, )
@@ -52,10 +50,6 @@ class Counter extends Component<Props, State> {
   componentDidMount() {
     console.log('Counter 4.componentDidMount')
   }
-  shouldComponentUpdate(nextProps: any, nextState: State) {
-    console.log('Counter 5.ShouldComponentUpdate')
-    return nextState.number % 2 === 0
-  }
   componentWillUpdate() {
     console.log('Counter 6.componentWillUpdate')
   }
@@ -72,10 +66,7 @@ class Counter extends Component<Props, State> {
     return (
       <div>
         <p>Counter:{this.state.number}</p>
-        {this.state.number === 4
-          ? null
-          : <ChildCounter count={this.state.number}/>
-        }
+        <ChildCounter count={this.state.number}/>
         {/* {React.createElement(ChildCounter, { count: this.state.number })} */}
         <button onClick={this.handleClick}>+</button>
       </div>

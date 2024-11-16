@@ -1,15 +1,17 @@
-import { createElement } from "./react"
-import { findDOM, compareTwoVdom } from "./react-dom"
+import { createElement } from './react'
+import { findDOM, compareTwoVdom } from './react-dom'
 
 export const updateQueue = {
+  // 事件处理阶段，劫持了全局所有事件，在调用处理函数前标记为批量更新模式
   isBatchingUpdate: false,
+  // 处理函数完成后执行并清空批量队列
   updaters: [] as Updater[],
   batchUpdate() {
     this.updaters.forEach(updater => {
       updater.updateComponent()
     })
     this.updaters.length = 0
-  }
+  },
 }
 
 export class Component<P extends Props = {}, S = {}> {
@@ -31,7 +33,10 @@ export class Component<P extends Props = {}, S = {}> {
   /** 当 props 或 state 变化时依赖此方法可以控制是否更新
    * 像是手动控制可以减少更新频率
    */
-  shouldComponentUpdate?(nextProps: Readonly<P> | undefined, nextState: Readonly<S>): boolean
+  shouldComponentUpdate?(
+    nextProps: Readonly<P> | undefined,
+    nextState: Readonly<S>
+  ): boolean
   componentWillUpdate?(): void
   componentDidUpdate?(): void
   componentWillReceiveProps?(): void
@@ -51,7 +56,11 @@ export class Component<P extends Props = {}, S = {}> {
     // A path 方法接收的就是 VDOM, 内部通过 findDOM 按渲染链查找
     const renderVdom = this.render()
     // 通过shouldUpdate 调用时必定渲染过至少一次
-    compareTwoVdom((findDOM(oldRenderVdom!).parentNode)!, oldRenderVdom!, renderVdom)
+    compareTwoVdom(
+      findDOM(oldRenderVdom!).parentNode!,
+      oldRenderVdom!,
+      renderVdom
+    )
     this.oldRenderVdom = renderVdom
     this.componentDidUpdate?.()
   }
@@ -93,7 +102,10 @@ class Updater<P extends Props = StdProps> {
 
   /** 根据 pendingStates 计算最终 state 并执行回调队列和清空两个队列 */
   getState() {
-    let { instance: { state }, pendingStates } = this
+    let {
+      instance: { state },
+      pendingStates,
+    } = this
     pendingStates.forEach(nextState => {
       state = nextState
     })
@@ -110,14 +122,18 @@ function shouldUpdate(
   nextProps: Props | undefined,
   nextState: Props
 ) {
-  let willUpdate = instance.shouldComponentUpdate?.(
-    nextProps, nextState
-  ) === true ? true : false
+  let willUpdate =
+    !!instance.shouldComponentUpdate?.(nextProps, nextState) || true
   if (willUpdate) {
     instance.componentWillUpdate?.()
   }
   nextProps && (instance.props = nextProps)
-  instance.state = nextState
+  // @ts-ignore
+  const derivedState = instance.constructor.getDerivedStateFromProps?.(
+    nextProps,
+    instance.state
+  )
+  instance.state = derivedState || nextState
   if (willUpdate) {
     instance.forceUpdate()
   }
