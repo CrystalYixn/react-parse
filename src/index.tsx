@@ -4,56 +4,115 @@ import React from './react'
 import { Component } from './Component'
 import ReactDOM from './react-dom'
 
+const ThemeContext = React.createContext<null | {
+  color: string
+  changeColor: (color: string) => void
+}>(null)
+
 type Props = {}
 type State = {
-  messages: string[]
+  color: string
+}
+
+class Header extends Component {
+  // 固定写法，写死 contextType 变量名称
+  static contextType = ThemeContext
+  render() {
+    return (
+      <div
+        style={{
+          margin: '10px',
+          padding: '5px',
+          border: `5px solid ${(this.context as any).color}`,
+        }}
+      >
+        头部
+        <Title />
+      </div>
+    )
+  }
+}
+
+class Title extends Component {
+  static contextType = ThemeContext
+  render() {
+    return (
+      <div
+        style={{
+          margin: '10px',
+          padding: '5px',
+          border: `5px solid ${(this.context as any).color}`,
+        }}
+      >
+        标题
+      </div>
+    )
+  }
+}
+
+class Main extends Component {
+  static contextType = ThemeContext
+  render() {
+    return (
+      <div
+        style={{
+          margin: '10px',
+          padding: '5px',
+          border: `5px solid ${(this.context as any).color}`,
+        }}
+      >
+        主体
+        <Content />
+      </div>
+    )
+  }
+}
+
+class Content extends Component {
+  static contextType = ThemeContext
+  render() {
+    return (
+      <div
+        style={{
+          margin: '10px',
+          padding: '5px',
+          border: `5px solid ${(this.context as any).color}`,
+        }}
+      >
+        内容
+        <button onClick={() => (this.context as any).changeColor('red')}>red</button>
+        <button onClick={() => (this.context as any).changeColor('blue')}>blue</button>
+      </div>
+    )
+  }
 }
 
 class ScrollList extends Component<Props, State> {
-  wrapper: React.RefObject<HTMLDivElement>
-  timer: NodeJS.Timeout | null = null
   constructor(props: Props) {
     super(props)
-    this.state = { messages: ['3', '2', '1', '0'] }
-    this.wrapper = React.createRef()
+    this.state = { color: 'red' }
   }
-  addMessage = () => {
-    this.setState({ messages: [`${this.state.messages.length}`, ...this.state.messages] })
-  }
-  componentDidMount() {
-    this.timer = setInterval(() => {
-      this.addMessage()
-    }, 1000)
-  }
-  componentWillUnmount() {
-    clearInterval(this.timer!)
-  }
-  getSnapshotBeforeUpdate() {
-    return {
-      prevScrollHeight: this.wrapper.current!.scrollHeight,
-      prevScrollTop: this.wrapper.current!.scrollTop
-    }
-  }
-  componentDidUpdate(prevProps: Props, prevState: State, snapshot: { prevScrollHeight: number; prevScrollTop: number }) {
-    const currentHeight = this.wrapper.current!.scrollHeight
-    const prevHeight = snapshot.prevScrollHeight
-    const prevTop = snapshot.prevScrollTop
-    this.wrapper.current!.scrollTop = currentHeight - prevHeight + prevTop
+  changeColor = (color: string) => {
+    this.setState({ color })
   }
 
   render() {
-    let style = {
-      height: '100px',
-      width: '200px',
-      border: '1px solid red',
-      overflow: 'auto'
-    }
+    let value = { color: this.state.color, changeColor: this.changeColor }
     return (
-      <div ref={this.wrapper} style={style}>
-        {this.state.messages.map((message, index) => (
-          <div key={index}>{message}</div>
-        ))}
-      </div>
+      // @ts-ignore
+      <ThemeContext.Provider value={value}>
+        <div
+          style={{
+            margin: '10px',
+            padding: '5px',
+            border: `5px solid ${this.state.color}`,
+            width: '200px',
+          }}
+        >
+          <Header />
+          <Main />
+        </div>
+      </ThemeContext.Provider>
     )
   }
 }

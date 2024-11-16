@@ -1,4 +1,5 @@
 import { createElement } from './react'
+import type { createContext } from './react'
 import { findDOM, compareTwoVdom } from './react-dom'
 
 export const updateQueue = {
@@ -17,10 +18,11 @@ export const updateQueue = {
 export class Component<P extends Props = {}, S = {}, G = any> {
   static isReactComponent = {}
   static defaultProps?: Props
+  static contextType?: ReturnType<typeof createContext<any>>
   props: P
   state: Readonly<S> = {} as S
   updater: Updater<P, S>
-  context: any
+  context: unknown
   refs: any
   oldRenderVdom: VDOM | null = null
   constructor(props: P) {
@@ -53,6 +55,7 @@ export class Component<P extends Props = {}, S = {}, G = any> {
 
   forceUpdate() {
     const { oldRenderVdom } = this
+    this.context = (this.constructor as typeof Component).contextType?._value
     // QA 这里产生的也可能是组件而不是真实 vdom, 怎么处理?
     // A path 方法接收的就是 VDOM, 内部通过 findDOM 按渲染链查找
     const renderVdom = this.render()

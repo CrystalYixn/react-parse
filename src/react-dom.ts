@@ -229,6 +229,9 @@ function mountClassComponent(vdom: ClassVDOM) {
     componentWillMount,
     componentDidMount,
   } = instance
+  if (type.contextType) {
+    instance.context = type.contextType._value
+  }
   componentWillMount?.()
   // QA 此处执行后的 renderVdom 也可能是组件?那 renderVdom 不就挂载到了组件上吗
   // A 就是需要挂载形成组件链

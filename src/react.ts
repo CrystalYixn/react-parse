@@ -37,12 +37,21 @@ export function forwardRef<T>(
   }
 }
 
+export function createContext<T>(defaultValue: T) {
+  function Provider(props: { value: T; children: VDOM }) {
+    context._value = props.value
+    return props.children
+  }
+  const context = { Provider, _value: defaultValue }
+  return context
+}
 
 const React = {
   createElement,
   Component,
   createRef,
   forwardRef,
+  createContext,
 }
 
 export default React
