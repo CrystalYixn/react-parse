@@ -42,7 +42,10 @@ export function createContext<T>(defaultValue: T) {
     context._value = props.value
     return props.children
   }
-  const context = { Provider, _value: defaultValue }
+  function Consumer(props: { children: (value: T) => VDOM }) {
+    return props.children(context._value)
+  }
+  const context = { Provider, Consumer, _value: defaultValue }
   return context
 }
 

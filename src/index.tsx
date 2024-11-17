@@ -4,33 +4,37 @@ import React from './react'
 import { Component } from './Component'
 import ReactDOM from './react-dom'
 
-const ThemeContext = React.createContext<null | {
-  color: string
-  changeColor: (color: string) => void
-}>(null)
+const ThemeContext = React.createContext({
+  color: 'red',
+  changeColor: (color: string) => {},
+})
 
 type Props = {}
 type State = {
   color: string
 }
 
-class Header extends Component {
-  // 固定写法，写死 contextType 变量名称
-  static contextType = ThemeContext
-  render() {
-    return (
-      <div
-        style={{
-          margin: '10px',
-          padding: '5px',
-          border: `5px solid ${(this.context as any).color}`,
-        }}
-      >
-        头部
-        <Title />
-      </div>
-    )
-  }
+
+function Header() {
+  return (
+    // @ts-ignore
+    <ThemeContext.Consumer>
+      {
+        (value) => (
+          <div
+            style={{
+              margin: '10px',
+              padding: '5px',
+              border: `5px solid ${value.color}`,
+            }}
+          >
+            头部
+            <Title />
+          </div>
+        )
+      }
+    </ThemeContext.Consumer>
+  )
 }
 
 class Title extends Component {
