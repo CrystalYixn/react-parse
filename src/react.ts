@@ -49,12 +49,19 @@ export function createContext<T>(defaultValue: T) {
   return context
 }
 
+function cloneElement(oldElement: VDOM, newProps: Props, children: (string | number | VDOM)) {
+  children = wrapToVdom(children)
+  const props = { ...oldElement.props, ...newProps, children }
+  return {...oldElement, props}
+}
+
 const React = {
   createElement,
   Component,
   createRef,
   forwardRef,
   createContext,
+  cloneElement,
 }
 
 export default React
