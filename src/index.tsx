@@ -4,122 +4,44 @@ import React from './react'
 import { Component } from './Component'
 import ReactDOM from './react-dom'
 
-const ThemeContext = React.createContext({
-  color: 'red',
-  changeColor: (color: string) => {},
-})
-
-type Props = {}
+type Props = {
+  onShow: () => void
+  onHide: () => void
+}
 type State = {
   color: string
 }
 
-
-function Header() {
-  return (
-    // @ts-ignore
-    <ThemeContext.Consumer>
-      {
-        (value) => (
-          <div
-            style={{
-              margin: '10px',
-              padding: '5px',
-              border: `5px solid ${value.color}`,
-            }}
-          >
-            头部
-            <Title />
-          </div>
-        )
-      }
-    </ThemeContext.Consumer>
-  )
-}
-
-class Title extends Component {
-  static contextType = ThemeContext
-  render() {
-    return (
-      <div
-        style={{
-          margin: '10px',
-          padding: '5px',
-          border: `5px solid ${(this.context as any).color}`,
-        }}
-      >
-        标题
-      </div>
-    )
-  }
-}
-
-class Main extends Component {
-  static contextType = ThemeContext
-  render() {
-    return (
-      <div
-        style={{
-          margin: '10px',
-          padding: '5px',
-          border: `5px solid ${(this.context as any).color}`,
-        }}
-      >
-        主体
-        <Content />
-      </div>
-    )
-  }
-}
-
-class Content extends Component {
-  static contextType = ThemeContext
-  render() {
-    return (
-      <div
-        style={{
-          margin: '10px',
-          padding: '5px',
-          border: `5px solid ${(this.context as any).color}`,
-        }}
-      >
-        内容
-        <button onClick={() => (this.context as any).changeColor('red')}>red</button>
-        <button onClick={() => (this.context as any).changeColor('blue')}>blue</button>
-      </div>
-    )
-  }
-}
-
-class ScrollList extends Component<Props, State> {
-  constructor(props: Props) {
-    super(props)
-    this.state = { color: 'red' }
-  }
-  changeColor = (color: string) => {
-    this.setState({ color })
-  }
-
-  render() {
-    let value = { color: this.state.color, changeColor: this.changeColor }
-    return (
+const withLoading = (OldComponent: typeof Component<any, any>) => {
+  return class extends Component {
+    show = () => {
+      let div = document.createElement('div')
+      div.innerHTML = '<p id="loading" style="position: absolute;top:100px;z-index:10;background-color:gray">loading...</p>'
+      document.body.appendChild(div)
+    }
+    hide = () => {
+      let div = document.querySelector('#loading')
+      div?.remove()
+    }
+    render() {
       // @ts-ignore
-      <ThemeContext.Provider value={value}>
-        <div
-          style={{
-            margin: '10px',
-            padding: '5px',
-            border: `5px solid ${this.state.color}`,
-            width: '200px',
-          }}
-        >
-          <Header />
-          <Main />
-        </div>
-      </ThemeContext.Provider>
+      return <OldComponent {...this.props} onShow={this.show} onHide={this.hide} />
+    }
+  }
+}
+
+// 属性代理，反向继承
+class Panel extends Component<Props, State> {
+  render() {
+    return (
+      <div>
+        <button onClick={this.props.onShow}>显示</button>
+        <button onClick={this.props.onHide}>隐藏</button>
+      </div>
     )
   }
 }
 
-const element = React.createElement(ScrollList, null)
-ReactDOM.render(element, document.getElementById('root')!)
+// const element = React.createElement(withLoading(Panel), null)
+const LoadingPanel = withLoading(Panel)
+ReactDOM.render(<LoadingPanel />, document.getElementById('root')!)
