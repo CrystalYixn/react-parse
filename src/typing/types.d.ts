@@ -1,5 +1,4 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
-import type { REACT_TEXT, REACT_FORWARD_REF_TYPE } from '@/constants'
+import type { REACT_TEXT, REACT_FORWARD_REF_TYPE, REACT_CONTEXT, REACT_PROVIDER } from '@/constants'
 import type { Component } from '@/Component'
 
 declare global {
@@ -8,6 +7,8 @@ declare global {
     | string
     | FunctionVDOMType<P>
     | typeof Component<P>
+    | typeof REACT_PROVIDER
+    | typeof REACT_CONTEXT
   type FunctionVDOMType<P extends Props = StdProps> = (props: P) => VDOM<P>
 
   // 给了默认值有什么影响?
@@ -15,12 +16,22 @@ declare global {
   // 不给默认值有什么影响？
   // 强制要求传入泛型
   type VDOM<P extends Props = StdProps> =
-    FunctionVDOM<P> | ClassVDOM<P> | NormalVDOM | ForwardVDOM
+    FunctionVDOM<P> | ClassVDOM<P> | NormalVDOM | ForwardVDOM | ContextProviderVDOM<P> | ContextConsumerVDOM<P>
 
   type StdVDOM<P extends Props = StdProps> = {
     props: P,
     ref?: { current: Component | Node }
   }
+
+  type ContextProviderVDOM<P extends Props = StdProps> = {
+    type: { $$typeof: typeof REACT_PROVIDER, _context: Context<P> }
+    renderVdom?: VDOM<P>
+  } & StdVDOM<P & { value: unknown }>
+
+  type ContextConsumerVDOM<P extends Props = StdProps> = {
+    type: { $$typeof: typeof REACT_CONTEXT, _context: Context<P> }
+    renderVdom?: VDOM<P>
+  } & StdVDOM<{ children: (value: unknown) => VDOM }>
 
   type FunctionVDOM<P extends Props = StdProps> = {
     type: FunctionVDOMType<P>

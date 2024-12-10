@@ -1,4 +1,4 @@
-import { REACT_TEXT } from '@/constants'
+import { REACT_CONTEXT, REACT_PROVIDER, REACT_TEXT } from '@/constants'
 import { addEvent } from './event'
 
 // QA? 为什么需要声明这么多次 P extends Props
@@ -32,6 +32,16 @@ function isForwardVDOM(vdom: VDOM): vdom is ForwardVDOM {
   return '$$typeof' in type
 }
 
+function isContextProviderVDOM(vdom: VDOM): vdom is ContextProviderVDOM {
+  const { type } = vdom
+  return '$$typeof' in type && type.$$typeof === REACT_PROVIDER
+}
+
+function isContextConsumerVDOM(vdom: VDOM): vdom is ContextConsumerVDOM {
+  const { type } = vdom
+  return '$$typeof' in type && type.$$typeof === REACT_CONTEXT
+}
+
 /** 将 vdom 转换为真实 dom */
 function createDom(vdom: VDOM): DOM {
   let { type, props, ref } = vdom
@@ -42,6 +52,10 @@ function createDom(vdom: VDOM): DOM {
     } else {
       dom = document.createElement(type)
     }
+  } else if (isContextProviderVDOM(vdom)) {
+    return mountContextProviderComponent(vdom)
+  } else if (isContextConsumerVDOM(vdom)) {
+    return mountContextConsumerComponent(vdom)
   } else if (isForwardVDOM(vdom)) {
     return mountForwardComponent(vdom)
   } else {
@@ -133,6 +147,19 @@ function updateElement(oldVdom: VDOM, newVdom: VDOM) {
     const currentDom = newVdom.dom = findDOM(oldVdom)
     updateProps(currentDom, oldVdom.props, newVdom.props)
     updateChildren(currentDom as HTMLElement, oldVdom.props.children, newVdom.props.children)
+  } else if (isContextProviderVDOM(oldVdom) && isContextProviderVDOM(newVdom)) {
+    const parentDOM = findDOM(oldVdom).parentNode!
+    const { type, props } = newVdom
+    type._context._value = props.value
+    const renderVdom = props.children as VDOM
+    compareTwoVdom(parentDOM, oldVdom.renderVdom!, renderVdom)
+    newVdom.renderVdom = renderVdom
+  } else if (isContextConsumerVDOM(oldVdom) && isContextConsumerVDOM(newVdom)) {
+    const parentDOM = findDOM(oldVdom).parentNode!
+    const { type, props } = newVdom
+    const renderVdom = props.children(type._context._value)
+    compareTwoVdom(parentDOM, oldVdom.renderVdom!, renderVdom)
+    newVdom.renderVdom = renderVdom
   } else if (isClassVDOM(oldVdom) && isClassVDOM(newVdom)) {
     updateClassComponent(oldVdom, newVdom)
   } else if (isFunctionVDom(oldVdom) && isFunctionVDom(newVdom)) {
@@ -199,6 +226,21 @@ function updateProps(dom: DOM, oldProps: Props, newProps: Props) {
 /** 协调 children 并挂载 */
 function reconcileChildren(children: VDOM[], parent: DOM) {
   children.forEach(child => render(child, parent))
+}
+
+function mountContextProviderComponent(vdom: ContextProviderVDOM) {
+  const { type, props } = vdom
+  type._context._value = props.value
+  const renderVdom = props.children as VDOM
+  vdom.renderVdom = renderVdom
+  return createDom(renderVdom)
+}
+
+function mountContextConsumerComponent(vdom: ContextConsumerVDOM) {
+  const { type, props } = vdom
+  const renderVdom = props.children(type._context._value)
+  vdom.renderVdom = renderVdom
+  return createDom(renderVdom)
 }
 
 /** 执行 type() 得到 vdom, 将 vdom 转为真实 dom 并返回 */

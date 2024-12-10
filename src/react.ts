@@ -1,13 +1,13 @@
 import { Component } from "./Component"
-import { REACT_FORWARD_REF_TYPE } from "./constants"
+import { REACT_CONTEXT, REACT_FORWARD_REF_TYPE, REACT_PROVIDER } from "./constants"
 import { wrapToVdom } from "./utils"
 
 /** 创建 VDOM */
 export function createElement<P extends Props>(
   type: VDOMType<P>,
   props: null | P,
-  ...children: (string | number | VDOM<P>)[]
-): VDOM<P> {
+  ...children: (string | number | VDOM)[]
+): VDOM {
   if (props === null) props = {} as P
   const { ref } = props
   if (children.length) {
@@ -37,16 +37,44 @@ export function forwardRef<T>(
   }
 }
 
-export function createContext<T>(defaultValue: T) {
-  function Provider(props: { value: T; children: VDOM }) {
-    context._value = props.value
-    return props.children
-  }
-  function Consumer(props: { children: (value: T) => VDOM }) {
-    return props.children(context._value)
-  }
-  const context = { Provider, Consumer, _value: defaultValue }
-  return context
+// 首先定义接口
+interface Context<T> {
+  $$typeof: symbol;
+  Provider: Provider<T>;
+  Consumer: Consumer<T>;
+  _value: T;
+}
+
+interface Provider<T> {
+  $$typeof: symbol;
+  _context: Context<T>;
+}
+
+interface Consumer<T> {
+  $$typeof: symbol;
+  _context: Context<T>;
+}
+
+// 创建 context 的函数
+export function createContext<T>(defaultValue: T): Context<T> {
+  let context: Context<T> = {
+    $$typeof: REACT_CONTEXT,
+    Provider: {
+      $$typeof: REACT_PROVIDER,
+      _context: null!,
+    },
+    Consumer: {
+      $$typeof: REACT_CONTEXT,
+      _context: null!,
+    },
+    _value: defaultValue,
+  };
+
+  // 处理循环引用
+  context.Provider._context = context;
+  context.Consumer._context = context;
+
+  return context;
 }
 
 function cloneElement(oldElement: VDOM, newProps: Props, children: (string | number | VDOM)) {
