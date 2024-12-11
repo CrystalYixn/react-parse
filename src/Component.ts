@@ -129,7 +129,7 @@ function shouldUpdate<P extends Props = StdProps, S = {}>(
   nextState: S
 ) {
   let willUpdate =
-    !!instance.shouldComponentUpdate?.(nextProps, nextState) ?? true
+    instance.shouldComponentUpdate?.(nextProps, nextState) ?? true
   if (willUpdate) {
     instance.componentWillUpdate?.()
   }

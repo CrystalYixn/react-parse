@@ -1,6 +1,7 @@
 import { Component } from "./Component"
 import { REACT_CONTEXT, REACT_FORWARD_REF_TYPE, REACT_MEMO, REACT_PROVIDER } from "./constants"
 import { shallowEqual, wrapToVdom } from "./utils"
+import ReactDOM from "./react-dom"
 
 /** 创建 VDOM */
 export function createElement<P extends Props>(
@@ -101,6 +102,7 @@ const React = {
   createContext,
   cloneElement,
   memo,
+  useState: ReactDOM.useState,
 }
 
 export default React

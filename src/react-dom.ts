@@ -4,8 +4,29 @@ import { addEvent } from './event'
 // QA? 为什么需要声明这么多次 P extends Props
 // A 因为这些函数是散落在不同处直接无关联的, 所以每一个都需要重新声明
 
+let hookIndex = 0
+let hookStates: any[] = []
+let scheduleUpdate: () => void
+function useState<T>(initialState: T) {
+  hookStates[hookIndex] = hookStates[hookIndex] || initialState
+  const currentIndex = hookIndex
+  function setState(newState: T) {
+    hookStates[currentIndex] = newState
+    scheduleUpdate()
+  }
+  return [hookStates[hookIndex++], setState]
+}
+
 /** 将 vdom 变为真实 dom 并挂载到 container 中 */
 function render(vdom: VDOM, container: DOM) {
+  mount(vdom, container)
+  scheduleUpdate = () => {
+    hookIndex = 0
+    compareTwoVdom(container as ParentNode, vdom, vdom)
+  }
+}
+
+function mount(vdom: VDOM, container: DOM) {
   const dom = createDom(vdom)
   container.appendChild(dom)
   dom.componentDidMount?.()
@@ -212,9 +233,9 @@ function updateMemoComponent(oldVdom: MemoVDOM, newVdom: MemoVDOM) {
     const parentDOM = findDOM(oldVdom).parentNode!
     const { type, props } = newVdom
     const renderVdom = type.type(props)
-    newVdom.renderVdom = renderVdom
     newVdom.prevProps = props
-    compareTwoVdom(parentDOM, oldVdom.renderVdom!, newVdom.renderVdom)
+    compareTwoVdom(parentDOM, oldVdom.renderVdom!, renderVdom)
+    newVdom.renderVdom = renderVdom
   }
 }
 
@@ -223,8 +244,9 @@ function updateFunctionComponent(oldVdom: FunctionVDOM, newVdom: FunctionVDOM) {
   const parentDOM = findDOM(oldVdom).parentNode!
   const { type, props } = newVdom
   const renderVdom = type(props)
+  compareTwoVdom(parentDOM, oldVdom.renderVdom!, renderVdom)
+  // 需要先 compareTwoVdom 处理更新（内部会读取 dom，此时的 renderVdom 刚生成还没有，所以当 oldVdom === newVdom 即通过 useState 更新时不能直接替换 oldVdom.renderVdom）
   newVdom.renderVdom = renderVdom
-  compareTwoVdom(parentDOM, oldVdom.renderVdom!, newVdom.renderVdom)
 }
 
 /** 更新组件属性, 不包括 children */
@@ -324,6 +346,7 @@ function mountClassComponent(vdom: ClassVDOM) {
 
 const ReactDOM = {
   render,
+  useState,
 }
 
 export default ReactDOM
