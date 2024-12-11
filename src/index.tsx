@@ -4,13 +4,11 @@ import React from './react'
 import { Component, PureComponent } from './Component'
 import ReactDOM from './react-dom'
 
+const MemoSubCounter = React.memo(SubCounter)
 
-
-class SubCounter extends PureComponent<{ count: number }> {
-  render() {
-    console.log(` ================== SubCounter ================= `)
-    return <div>{this.props.count}</div>
-  }
+function SubCounter(props: { count: number }) {
+  console.log(` ================== SubCounter ================= `)
+  return <div>{props.count}</div>
 }
 
 class Counter extends PureComponent {
@@ -28,7 +26,7 @@ class Counter extends PureComponent {
         <input ref={this.inputRef} />
         <button onClick={this.handleClick}>+</button>
         {/* @ts-ignore */}
-        <SubCounter count={this.state.count} />
+        <MemoSubCounter count={this.state.count} />
       </div>
     )
   }

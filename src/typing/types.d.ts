@@ -1,4 +1,10 @@
-import type { REACT_TEXT, REACT_FORWARD_REF_TYPE, REACT_CONTEXT, REACT_PROVIDER } from '@/constants'
+import type {
+  REACT_TEXT,
+  REACT_FORWARD_REF_TYPE,
+  REACT_CONTEXT,
+  REACT_PROVIDER,
+  REACT_MEMO,
+} from '@/constants'
 import type { Component } from '@/Component'
 
 declare global {
@@ -9,6 +15,7 @@ declare global {
     | typeof Component<P>
     | typeof REACT_PROVIDER
     | typeof REACT_CONTEXT
+    | typeof REACT_MEMO
   type FunctionVDOMType<P extends Props = StdProps> = (props: P) => VDOM<P>
 
   // 给了默认值有什么影响?
@@ -16,22 +23,38 @@ declare global {
   // 不给默认值有什么影响？
   // 强制要求传入泛型
   type VDOM<P extends Props = StdProps> =
-    FunctionVDOM<P> | ClassVDOM<P> | NormalVDOM | ForwardVDOM | ContextProviderVDOM<P> | ContextConsumerVDOM<P>
+    | FunctionVDOM<P>
+    | ClassVDOM<P>
+    | NormalVDOM
+    | ForwardVDOM
+    | ContextProviderVDOM<P>
+    | ContextConsumerVDOM<P>
+    | MemoVDOM<P>
 
   type StdVDOM<P extends Props = StdProps> = {
-    props: P,
+    props: P
     ref?: { current: Component | Node }
   }
 
   type ContextProviderVDOM<P extends Props = StdProps> = {
-    type: { $$typeof: typeof REACT_PROVIDER, _context: Context<P> }
+    type: { $$typeof: typeof REACT_PROVIDER; _context: Context<P> }
     renderVdom?: VDOM<P>
   } & StdVDOM<P & { value: unknown }>
 
   type ContextConsumerVDOM<P extends Props = StdProps> = {
-    type: { $$typeof: typeof REACT_CONTEXT, _context: Context<P> }
+    type: { $$typeof: typeof REACT_CONTEXT; _context: Context<P> }
     renderVdom?: VDOM<P>
   } & StdVDOM<{ children: (value: unknown) => VDOM }>
+
+  type MemoVDOM<P extends Props = StdProps> = {
+    type: {
+      $$typeof: typeof REACT_MEMO
+      type: FunctionVDOMType<P>
+      compare: (prevProps: P, nextProps: P) => boolean
+    }
+    prevProps?: P
+    renderVdom?: VDOM<P>
+  } & StdVDOM<P>
 
   type FunctionVDOM<P extends Props = StdProps> = {
     type: FunctionVDOMType<P>
@@ -51,7 +74,7 @@ declare global {
 
   type ForwardVDOM<P extends Props = StdProps> = {
     type: {
-      $$typeof: typeof REACT_FORWARD_REF_TYPE,
+      $$typeof: typeof REACT_FORWARD_REF_TYPE
       render: (p: Props, ref: Ref) => React.JSX.Element
     }
     renderVdom?: VDOM<P>
@@ -65,8 +88,8 @@ declare global {
   }
 
   type DOM = (HTMLElement | Text) & {
-    store?: { [eventName: string]: (...args: unknown[]) => unknown },
-    componentDidMount?: () => void,
+    store?: { [eventName: string]: (...args: unknown[]) => unknown }
+    componentDidMount?: () => void
   }
 
   type EventType = Exclude<

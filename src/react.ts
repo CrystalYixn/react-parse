@@ -1,6 +1,6 @@
 import { Component } from "./Component"
-import { REACT_CONTEXT, REACT_FORWARD_REF_TYPE, REACT_PROVIDER } from "./constants"
-import { wrapToVdom } from "./utils"
+import { REACT_CONTEXT, REACT_FORWARD_REF_TYPE, REACT_MEMO, REACT_PROVIDER } from "./constants"
+import { shallowEqual, wrapToVdom } from "./utils"
 
 /** 创建 VDOM */
 export function createElement<P extends Props>(
@@ -85,6 +85,14 @@ function cloneElement(oldElement: VDOM, newProps: Props, children: (string | num
   return {...oldElement, props}
 }
 
+function memo<T extends Props>(type: FunctionVDOMType<T>, compare = shallowEqual) {
+  return {
+    $$typeof: REACT_MEMO,
+    type,
+    compare,
+  }
+}
+
 const React = {
   createElement,
   Component,
@@ -92,6 +100,7 @@ const React = {
   forwardRef,
   createContext,
   cloneElement,
+  memo,
 }
 
 export default React
