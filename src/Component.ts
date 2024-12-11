@@ -1,6 +1,7 @@
 import { createElement } from './react'
 import type { createContext } from './react'
 import { findDOM, compareTwoVdom } from './react-dom'
+import { shallowEqual } from './utils'
 
 export const updateQueue = {
   // 事件处理阶段，劫持了全局所有事件，在调用处理函数前标记为批量更新模式
@@ -128,7 +129,7 @@ function shouldUpdate<P extends Props = StdProps, S = {}>(
   nextState: S
 ) {
   let willUpdate =
-    !!instance.shouldComponentUpdate?.(nextProps, nextState) || true
+    !!instance.shouldComponentUpdate?.(nextProps, nextState) ?? true
   if (willUpdate) {
     instance.componentWillUpdate?.()
   }
@@ -141,5 +142,11 @@ function shouldUpdate<P extends Props = StdProps, S = {}>(
   instance.state = derivedState || nextState
   if (willUpdate) {
     instance.forceUpdate()
+  }
+}
+
+export class PureComponent<P extends Props = StdProps, S = {}> extends Component<P, S> {
+  shouldComponentUpdate(nextProps: P = {} as P, nextState: S) {
+    return !shallowEqual(this.props, nextProps) || !shallowEqual(this.state, nextState)
   }
 }

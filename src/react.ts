@@ -16,7 +16,9 @@ export function createElement<P extends Props>(
       ? wrapToVdom(children[0])
       : children.map(wrapToVdom)
   }
-
+  // 删除 react 编译生成的部分属性，自己实现中用不到且影响对比
+  delete props.__source
+  delete props.__self
   return {
     type,
     props,
