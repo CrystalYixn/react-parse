@@ -7,7 +7,7 @@ import { addEvent } from './event'
 let hookIndex = 0
 let hookStates: any[] = []
 let scheduleUpdate: () => void
-function useState<T>(initialState: T) {
+function useState<T>(initialState: T): [T, (newState: T) => void] {
   hookStates[hookIndex] = hookStates[hookIndex] || initialState
   const currentIndex = hookIndex
   function setState(newState: T) {
@@ -15,6 +15,21 @@ function useState<T>(initialState: T) {
     scheduleUpdate()
   }
   return [hookStates[hookIndex++], setState]
+}
+
+function useMemo<T>(factory: () => T, deps: unknown[]): T {
+  const [oldValue, oldDeps] = hookStates[hookIndex] || []
+  if (hookStates[hookIndex] && deps.every((dep, i) => dep === oldDeps[i])) {
+    hookIndex++
+    return oldValue
+  }
+  const newValue = factory()
+  hookStates[hookIndex++] = [newValue, deps]
+  return newValue
+}
+
+function useCallback<T>(callback: T, deps: any[]): T {
+  return useMemo(() => callback, deps)
 }
 
 /** 将 vdom 变为真实 dom 并挂载到 container 中 */
@@ -347,6 +362,8 @@ function mountClassComponent(vdom: ClassVDOM) {
 const ReactDOM = {
   render,
   useState,
+  useMemo,
+  useCallback,
 }
 
 export default ReactDOM

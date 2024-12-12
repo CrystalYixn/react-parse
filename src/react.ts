@@ -114,6 +114,8 @@ const React = {
   cloneElement,
   memo,
   useState: ReactDOM.useState,
+  useMemo: ReactDOM.useMemo,
+  useCallback: ReactDOM.useCallback,
 }
 
 export default React
