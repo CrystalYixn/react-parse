@@ -225,7 +225,7 @@ function updateClassComponent(oldVdom: ClassVDOM, newVdom: ClassVDOM) {
 
 /** 更新 Memo 组件 */
 function updateMemoComponent(oldVdom: MemoVDOM, newVdom: MemoVDOM) {
-  const { type, prevProps } = newVdom
+  const { type, prevProps } = oldVdom
   if (type.compare(prevProps!, newVdom.props)) {
     newVdom.renderVdom = oldVdom.renderVdom
     newVdom.prevProps = newVdom.props
