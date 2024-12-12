@@ -1,4 +1,9 @@
-import { REACT_CONTEXT, REACT_MEMO, REACT_PROVIDER, REACT_TEXT } from '@/constants'
+import {
+  REACT_CONTEXT,
+  REACT_MEMO,
+  REACT_PROVIDER,
+  REACT_TEXT,
+} from '@/constants'
 import { addEvent } from './event'
 
 // QA? 为什么需要声明这么多次 P extends Props
@@ -8,13 +13,30 @@ let hookIndex = 0
 let hookStates: any[] = []
 let scheduleUpdate: () => void
 function useState<T>(initialState: T): [T, (newState: T) => void] {
+  return useReducer(null, initialState)
+}
+
+function useReducer<T>(
+  reducer: (state: T, action: any) => T,
+  initialState: T
+): [T, (action: unknown) => void]
+function useReducer<T>(
+  reducer: null,
+  initialState: T
+): [T, (state: T) => void]
+function useReducer<T>(
+  reducer: null | ((state: T, action: any) => T),
+  initialState: T
+): [T, (actionOrState: T | unknown) => void] {
   hookStates[hookIndex] = hookStates[hookIndex] || initialState
   const currentIndex = hookIndex
-  function setState(newState: T) {
-    hookStates[currentIndex] = newState
+  function dispatch(actionOrState: T | unknown) {
+    hookStates[currentIndex] = reducer
+      ? reducer(hookStates[currentIndex], actionOrState)
+      : actionOrState
     scheduleUpdate()
   }
-  return [hookStates[hookIndex++], setState]
+  return [hookStates[hookIndex++], dispatch]
 }
 
 function useMemo<T>(factory: () => T, deps: unknown[]): T {
@@ -89,7 +111,7 @@ function createDom(vdom: VDOM): DOM {
   let dom: DOM
   if (isNormalVDOM(vdom)) {
     if (type === REACT_TEXT) {
-      dom  = document.createTextNode(props.content || '')
+      dom = document.createTextNode(props.content || '')
     } else {
       dom = document.createElement(type)
     }
@@ -132,7 +154,7 @@ export function compareTwoVdom(
   parentDom: ParentNode,
   oldVdom: VDOM | null,
   newVdom: VDOM | null,
-  nextDOM?: DOM | null,
+  nextDOM?: DOM | null
 ) {
   // 新老都有
   if (oldVdom && newVdom) {
@@ -181,15 +203,26 @@ export function findDOM(vdom: VDOM) {
 
 /** 新旧孩子类型相同时的 diff 更新 */
 function updateElement(oldVdom: VDOM, newVdom: VDOM) {
-  if (oldVdom.type === REACT_TEXT && newVdom.type === REACT_TEXT && isNormalVDOM(newVdom)) {
-    let currentDOM = newVdom.dom = findDOM(oldVdom)
-    if (newVdom.props.content && oldVdom.props.content !== newVdom.props.content) {
+  if (
+    oldVdom.type === REACT_TEXT &&
+    newVdom.type === REACT_TEXT &&
+    isNormalVDOM(newVdom)
+  ) {
+    let currentDOM = (newVdom.dom = findDOM(oldVdom))
+    if (
+      newVdom.props.content &&
+      oldVdom.props.content !== newVdom.props.content
+    ) {
       currentDOM.textContent = newVdom.props.content
     }
   } else if (typeof oldVdom.type === 'string' && isNormalVDOM(newVdom)) {
-    const currentDom = newVdom.dom = findDOM(oldVdom)
+    const currentDom = (newVdom.dom = findDOM(oldVdom))
     updateProps(currentDom, oldVdom.props, newVdom.props)
-    updateChildren(currentDom as HTMLElement, oldVdom.props.children, newVdom.props.children)
+    updateChildren(
+      currentDom as HTMLElement,
+      oldVdom.props.children,
+      newVdom.props.children
+    )
   } else if (isMemoVDOM(oldVdom) && isMemoVDOM(newVdom)) {
     updateMemoComponent(oldVdom, newVdom)
   } else if (isContextProviderVDOM(oldVdom) && isContextProviderVDOM(newVdom)) {
@@ -215,14 +248,14 @@ function updateElement(oldVdom: VDOM, newVdom: VDOM) {
 function updateChildren(
   parentDOM: ParentNode,
   oldVChildren: VDOM[] | VDOM | null = [],
-  newVChildren: VDOM[] | VDOM | null = [],
+  newVChildren: VDOM[] | VDOM | null = []
 ) {
   const oc = Array.isArray(oldVChildren) ? oldVChildren : [oldVChildren]
   const nc = Array.isArray(newVChildren) ? newVChildren : [newVChildren]
   const maxChildren = oc.length > nc.length ? oc : nc
   maxChildren.forEach((c, i) => {
     const nextVdom = oc.find(
-      // 一定是当前元素之后的元素 && 
+      // 一定是当前元素之后的元素 &&
       (ovChild, idx) => idx > i && ovChild && findDOM(ovChild)
     )
     compareTwoVdom(parentDOM, oc[i], nc[i], nextVdom && findDOM(nextVdom))
@@ -232,7 +265,7 @@ function updateChildren(
 /** 更新类组件 */
 function updateClassComponent(oldVdom: ClassVDOM, newVdom: ClassVDOM) {
   // 同步新旧 vdom 上的挂载属性
-  const instance = newVdom.instance = oldVdom.instance
+  const instance = (newVdom.instance = oldVdom.instance)
   newVdom.renderVdom = oldVdom.renderVdom
   instance.componentWillReceiveProps?.()
   instance.updater.emitUpdate(newVdom.props)
@@ -278,7 +311,7 @@ function updateProps(dom: DOM, oldProps: Props, newProps: Props) {
       }
     } else if (key.startsWith('on')) {
       // QA 事件都走的批量更新，什么情况下会触发单个更新？
-      addEvent(dom, (key.toLocaleLowerCase()) as EventType, newProps[key])
+      addEvent(dom, key.toLocaleLowerCase() as EventType, newProps[key])
     } else {
       Reflect.set(dom, key, newProps[key])
     }
@@ -326,7 +359,11 @@ function mountFunctionComponent(vdom: FunctionVDOM) {
 
 /** 从 type 中解构出 render 方法，并将 ref 对象传递给 render 方法保存 dom */
 function mountForwardComponent(vdom: ForwardVDOM) {
-  const { type: { render }, props, ref } = vdom
+  const {
+    type: { render },
+    props,
+    ref,
+  } = vdom
   const renderVdom = render(props, ref)
   vdom.renderVdom = renderVdom
   return createDom(renderVdom)
@@ -337,10 +374,7 @@ function mountClassComponent(vdom: ClassVDOM) {
   const { type, props, ref } = vdom
   let defaultProps = type.defaultProps || {}
   const instance = new type({ ...defaultProps, ...props })
-  const {
-    componentWillMount,
-    componentDidMount,
-  } = instance
+  const { componentWillMount, componentDidMount } = instance
   if (type.contextType) {
     instance.context = type.contextType._value
   }
@@ -355,7 +389,8 @@ function mountClassComponent(vdom: ClassVDOM) {
   // 组件实例记录当前渲染的 vdom, 用于渲染时比较更新
   instance.oldRenderVdom = renderVdom
   const dom = createDom(renderVdom)
-  componentDidMount && (dom.componentDidMount = componentDidMount.bind(instance))
+  componentDidMount &&
+    (dom.componentDidMount = componentDidMount.bind(instance))
   return dom
 }
 
@@ -364,6 +399,7 @@ const ReactDOM = {
   useState,
   useMemo,
   useCallback,
+  useReducer,
 }
 
 export default ReactDOM

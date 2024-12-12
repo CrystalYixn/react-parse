@@ -116,6 +116,7 @@ const React = {
   useState: ReactDOM.useState,
   useMemo: ReactDOM.useMemo,
   useCallback: ReactDOM.useCallback,
+  useReducer: ReactDOM.useReducer,
 }
 
 export default React
