@@ -12,6 +12,23 @@ import { addEvent } from './event'
 let hookIndex = 0
 let hookStates: any[] = []
 let scheduleUpdate: () => void
+function useEffect(callback: () => void, deps: any[]) {
+  if (hookStates[hookIndex]) {
+    const [clear, oldDeps] = hookStates[hookIndex]
+    const hasChanged = deps.some((dep, i) => dep !== oldDeps[i])
+    if (hasChanged) {
+      clear?.()
+      setTimeout(() => {
+        hookStates[hookIndex++] = [callback(), deps]
+      })
+    }
+  } else {
+    setTimeout(() => {
+      hookStates[hookIndex++] = [callback(), deps]
+    })
+  }
+}
+
 function useState<T>(initialState: T): [T, (newState: T) => void] {
   return useReducer(null, initialState)
 }
@@ -400,6 +417,7 @@ const ReactDOM = {
   useMemo,
   useCallback,
   useReducer,
+  useEffect,
 }
 
 export default ReactDOM

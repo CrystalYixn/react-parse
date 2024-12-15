@@ -122,6 +122,7 @@ const React = {
   useCallback: ReactDOM.useCallback,
   useReducer: ReactDOM.useReducer,
   useContext,
+  useEffect: ReactDOM.useEffect,
 }
 
 export default React
