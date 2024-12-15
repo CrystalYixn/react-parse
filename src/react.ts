@@ -105,6 +105,10 @@ function memo<T extends Props>(
   }
 }
 
+function useContext<T>(context: Context<T>) {
+  return context._value
+}
+
 const React = {
   createElement,
   Component,
@@ -117,6 +121,7 @@ const React = {
   useMemo: ReactDOM.useMemo,
   useCallback: ReactDOM.useCallback,
   useReducer: ReactDOM.useReducer,
+  useContext,
 }
 
 export default React

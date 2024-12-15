@@ -4,6 +4,11 @@ import React from './react'
 import { Component, PureComponent } from './Component'
 import ReactDOM from './react-dom'
 
+const CounterContext = React.createContext<{
+  count: number
+  dispatch: (action: 'add' | 'minus') => void
+} | null>(null)
+
 function reducer(state: number, action: 'add' | 'minus') {
   switch (action) {
     case 'add':
@@ -15,19 +20,26 @@ function reducer(state: number, action: 'add' | 'minus') {
   }
 }
 
-function Counter() {
-  const [count, dispatch] = React.useReducer(reducer, 0)
-  const [name, setName] = React.useState('')
-
+function ChildCounter() {
+  const { count, dispatch } = React.useContext(CounterContext)!
   return (
     <div>
       <button onClick={() => dispatch('add')}>+</button>
       <button onClick={() => dispatch('minus')}>-</button>
       <p>{count}</p>
-      <input value={name} onChange={e => setName(e.target.value)} />
-      {name}
     </div>
   )
 }
-// @ts-ignore
-ReactDOM.render(<Counter />, document.getElementById('root')!)
+
+function Counter() {
+  const [count, dispatch] = React.useReducer(reducer, 0)
+
+  return (
+    // @ts-ignore
+    <CounterContext.Provider value={{ count, dispatch }}>
+      <ChildCounter />
+    </CounterContext.Provider>
+  )
+}
+
+ReactDOM.render(React.createElement(Counter, null), document.getElementById('root')!)
